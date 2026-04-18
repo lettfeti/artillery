@@ -1194,10 +1194,18 @@
       for (const p of S.projectiles) if (!p.dead) updateProjectile(p);
       S.projectiles = S.projectiles.filter((p) => !p.dead);
 
-      // end-of-turn cleanup: after fire+settle, advance
+      // end-of-turn cleanup: after fire+settle, advance.
+      // Gravity adds +GRAV to vy every frame and landing resets it to 0,
+      // so a "standing" worm's vy oscillates between 0 and GRAV — don't
+      // treat that as motion. Only airborne or horizontally-moving worms
+      // count as still settling.
       if (S.fired && !S.winner) {
         const moving = S.projectiles.length > 0
-          || S.worms.some((w) => !w.dead && (Math.abs(w.vx) > 0.05 || Math.abs(w.vy) > 0.08 || !w.onGround));
+          || S.worms.some((w) => {
+            if (w.dead) return false;
+            if (!w.onGround) return true;
+            return Math.abs(w.vx) > 0.1;
+          });
         if (!moving) {
           S.postTurnT += dt;
           if (S.postTurnT > 0.9) advanceTurn();
