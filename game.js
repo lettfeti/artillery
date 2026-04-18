@@ -20,6 +20,7 @@
   const WORM_R = 12;
   const WORM_HP = 100;
   const FALL_V_THRESHOLD = 10;          // vy at which fall damage kicks in
+  const MAX_MOVE = 320;                 // pixels of horizontal travel allowed per turn
   const NET_TICK_MS = 80;               // host → joiner snapshot rate
 
   const SKY_COLORS = ['#070a1a', '#1a1f5e', '#3a1a5e'];
@@ -308,6 +309,7 @@
         facing: x < W / 2 ? 1 : -1,
         aim: x < W / 2 ? -Math.PI / 4 : -3 * Math.PI / 4,
         onGround: true, _jumped: false,
+        moveRem: MAX_MOVE,
       });
     }
   }
@@ -344,16 +346,22 @@
       return;
     }
 
-    // next alive worm (round-robin)
+    // next alive worm (round-robin). In solo mode the dummy is a sandbox
+    // target, not a player — stay on the user's worm forever.
     let n = S.worms.length;
-    for (let i = 1; i <= n; i++) {
-      const idx = (S.turnIdx + i) % n;
-      if (!S.worms[idx].dead) { S.turnIdx = idx; break; }
+    if (S.solo) {
+      // keep current turnIdx; reset the turn for another shot
+    } else {
+      for (let i = 1; i <= n; i++) {
+        const idx = (S.turnIdx + i) % n;
+        if (!S.worms[idx].dead) { S.turnIdx = idx; break; }
+      }
     }
     S.turnTimer = TURN_TIME;
     S.wind = (Math.random() * 2 - 1) * 0.7;
 
     const w = activeWorm();
+    if (w) w.moveRem = MAX_MOVE;
     showBanner(`${nameOf(w.playerId)}'s turn`);
   }
 
@@ -411,13 +419,17 @@
 
     const isActive = activeWorm() === w && !S.fired;
     const inputs = isActive ? activeInputs() : null;
+    const xBefore = w.x;
 
     let wantDX = 0;
     if (inputs) {
       if (w.onGround) {
-        if (inputs.left) { wantDX = -WALK_SPEED; w.facing = -1; }
-        if (inputs.right) { wantDX = WALK_SPEED; w.facing = 1; }
-        if (inputs.jump && !w._jumped) {
+        // movement budget: once exhausted, the worm can still change
+        // facing (so it can aim the other way) but can't walk further.
+        const canWalk = (w.moveRem == null ? MAX_MOVE : w.moveRem) > 0;
+        if (inputs.left)  { if (canWalk) wantDX = -WALK_SPEED; w.facing = -1; }
+        if (inputs.right) { if (canWalk) wantDX =  WALK_SPEED; w.facing =  1; }
+        if (inputs.jump && !w._jumped && canWalk) {
           w.vy = JUMP_VY;
           w.vx = (inputs.left ? -1 : inputs.right ? 1 : 0) * 2.8;
           w.onGround = false;
@@ -479,6 +491,14 @@
 
     w.x = nx;
     w.y = ny;
+
+    // consume movement budget from input-driven travel on the active worm.
+    // Explosion knockback also moves the worm, but we only count walking,
+    // not being blown around — so limit to cases where the player is holding
+    // a direction on the ground.
+    if (isActive && w.onGround && wantDX !== 0 && w.moveRem != null) {
+      w.moveRem = Math.max(0, w.moveRem - Math.abs(w.x - xBefore));
+    }
 
     // water / off-map death
     if (w.y > H - 30 || w.x < -30 || w.x > W + 30) {
@@ -879,6 +899,7 @@
         id: w.id, pid: w.playerId, ci: w.colorIdx, x: w.x|0, y: w.y|0,
         vx: +w.vx.toFixed(2), vy: +w.vy.toFixed(2),
         hp: w.hp, d: w.dead ? 1 : 0, f: w.facing, a: +w.aim.toFixed(3),
+        mr: w.moveRem == null ? MAX_MOVE : w.moveRem|0,
       })),
       proj: S.projectiles.map((p) => ({
         t: p.type, x: p.x|0, y: p.y|0, vx: +p.vx.toFixed(2), vy: +p.vy.toFixed(2),
@@ -986,6 +1007,7 @@
           id: w.id, playerId: w.pid, colorIdx: w.ci, name: w.name,
           x: w.x, y: w.y, vx: 0, vy: 0, hp: w.hp,
           dead: false, facing: w.f, aim: w.a, onGround: true,
+          moveRem: MAX_MOVE,
         }));
         S.turnIdx = msg.turnIdx || 0;
         S.wind = msg.wind || 0;
@@ -1040,6 +1062,7 @@
         id: n.id, playerId: n.pid, colorIdx: n.ci,
         x: n.x, y: n.y, vx: n.vx, vy: n.vy, hp: n.hp,
         dead: !!n.d, facing: n.f, aim: n.a,
+        moveRem: n.mr != null ? n.mr : (prev.moveRem != null ? prev.moveRem : MAX_MOVE),
         name: prev.name || (S.players.find((p) => p.id === n.pid)?.name) || '',
       };
     });
@@ -1319,6 +1342,16 @@
     ctx.fillRect(w.x - barW/2, w.y - WORM_R - 18, barW * pct, barH);
     ctx.strokeStyle = 'rgba(255,255,255,0.25)';
     ctx.strokeRect(w.x - barW/2 + 0.5, w.y - WORM_R - 18 + 0.5, barW - 1, barH - 1);
+
+    // move budget — shown on the active worm only
+    if (activeWorm() === w && !S.fired && w.moveRem != null) {
+      const mpct = Math.max(0, Math.min(1, w.moveRem / MAX_MOVE));
+      const mH = 3;
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.fillRect(w.x - barW/2, w.y - WORM_R - 10, barW, mH);
+      ctx.fillStyle = mpct > 0.3 ? '#4dd0ff' : '#ffb866';
+      ctx.fillRect(w.x - barW/2, w.y - WORM_R - 10, barW * mpct, mH);
+    }
 
     // body glow
     ctx.save();
