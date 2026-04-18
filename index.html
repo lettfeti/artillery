@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#070a1a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="mobile-web-app-capable" content="yes" />
+<title>Artillery</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23070a1a'/%3E%3Ccircle cx='46' cy='20' r='10' fill='%23a06cff'/%3E%3Ccircle cx='20' cy='40' r='14' fill='%234dd0ff'/%3E%3Ccircle cx='17' cy='37' r='2' fill='%23070a1a'/%3E%3Ccircle cx='25' cy='37' r='2' fill='%23070a1a'/%3E%3C/svg%3E" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <section class="screen" data-screen="home">
+    <div class="hero">
+      <div class="logo">
+        <div class="planet"></div>
+        <div class="ring"></div>
+      </div>
+      <h1>Artillery</h1>
+      <p class="tag">Turn-based combat on a distant world.</p>
+    </div>
+
+    <label class="field">
+      <span>Callsign</span>
+      <input id="nameInput" type="text" maxlength="16" autocomplete="off" placeholder="Commander" />
+    </label>
+
+    <div class="actions">
+      <button class="btn primary" id="hostBtn">Host game</button>
+      <button class="btn" id="joinBtn">Join game</button>
+      <button class="btn ghost" id="soloBtn">Practice (solo)</button>
+    </div>
+  </section>
+
+  <!-- LOBBY (host & joiners share this) -->
+  <section class="screen" data-screen="lobby" hidden>
+    <button class="back" data-back>← Leave</button>
+    <h2 id="lobbyTitle">Lobby</h2>
+    <div class="code" id="lobbyCode">——————</div>
+    <div class="actions actions-row" id="lobbyCodeActions">
+      <button class="btn" id="copyCodeBtn">Copy code</button>
+      <button class="btn" id="copyLinkBtn">Copy link</button>
+    </div>
+    <div id="playerList" class="players"></div>
+    <p class="status" id="lobbyStatus">Waiting for commanders…</p>
+    <button class="btn primary" id="startBtn" hidden>Start match</button>
+  </section>
+
+  <!-- JOIN -->
+  <section class="screen" data-screen="join" hidden>
+    <button class="back" data-back>← Back</button>
+    <h2>Enter code</h2>
+    <input id="joinCode" class="code-input" type="text" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="ABC123" />
+    <div class="actions">
+      <button class="btn primary" id="joinGoBtn">Connect</button>
+    </div>
+    <p class="status" id="joinStatus"></p>
+  </section>
+
+  <!-- CONNECTING -->
+  <section class="screen" data-screen="connecting" hidden>
+    <h2>Connecting…</h2>
+    <div class="spinner"></div>
+    <p class="status" id="connectStatus">Opening channel…</p>
+    <button class="btn primary" id="joinRetryBtn" hidden>Try again</button>
+    <button class="btn ghost" data-back>Cancel</button>
+  </section>
+
+  <!-- GAME -->
+  <section class="screen game" data-screen="game" hidden>
+    <header class="hud">
+      <div class="hud-left">
+        <span class="turnName" id="turnName">—</span>
+        <span class="turnTimer" id="turnTimer">30</span>
+      </div>
+      <div class="hud-center">
+        <div class="wind">
+          <span class="wind-arrow" id="windArrow">→</span>
+          <span class="wind-val" id="windVal">0.0</span>
+        </div>
+      </div>
+      <div class="hud-right">
+        <span class="weapon-label" id="weaponLabel">—</span>
+        <span class="weapon-ammo" id="weaponAmmo">∞</span>
+      </div>
+    </header>
+
+    <div class="canvas-wrap">
+      <canvas id="game" width="1600" height="900"></canvas>
+      <div class="power-bar" id="powerBar" hidden><div class="power-fill" id="powerFill"></div></div>
+      <div class="banner" id="banner" hidden></div>
+    </div>
+
+    <div class="weapon-row" id="weaponRow"></div>
+
+    <div class="controls" id="controls">
+      <div class="ctrl-left">
+        <button class="cbtn" data-ctrl="left">◀</button>
+        <button class="cbtn" data-ctrl="right">▶</button>
+        <button class="cbtn" data-ctrl="jump">▲</button>
+      </div>
+      <div class="ctrl-aim">
+        <button class="cbtn small" data-ctrl="aim-up">↑</button>
+        <button class="cbtn small" data-ctrl="aim-dn">↓</button>
+      </div>
+      <div class="ctrl-fire">
+        <button class="cbtn fire" id="fireBtn">FIRE</button>
+      </div>
+    </div>
+
+    <div class="endbar" id="endbar" hidden>
+      <div class="endtext" id="endText"></div>
+      <div class="actions actions-row">
+        <button class="btn primary" id="rematchBtn">Rematch</button>
+        <button class="btn ghost" id="leaveBtn">Leave</button>
+      </div>
+    </div>
+
+    <div class="gamefoot">
+      <span class="conn" id="connDot"></span>
+      <span id="connText">Connected</span>
+    </div>
+  </section>
+
+</div>
+
+<script src="peerjs.min.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

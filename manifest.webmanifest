@@ -1,0 +1,18 @@
+{
+  "name": "Artillery",
+  "short_name": "Artillery",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#070a1a",
+  "theme_color": "#070a1a",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%23070a1a'/%3E%3Ccircle cx='368' cy='160' r='80' fill='%23a06cff'/%3E%3Ccircle cx='160' cy='320' r='112' fill='%234dd0ff'/%3E%3Ccircle cx='136' cy='296' r='16' fill='%23070a1a'/%3E%3Ccircle cx='200' cy='296' r='16' fill='%23070a1a'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
